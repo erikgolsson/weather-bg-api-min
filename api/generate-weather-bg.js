@@ -5,20 +5,24 @@ const client = new OpenAI({
 });
 
 export default async function handler(req, res) {
+  // CORS för din domän
   res.setHeader("Access-Control-Allow-Origin", "https://erikgolsson.se");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
+  // Preflight
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
+  // Endast POST
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST", "OPTIONS"]);
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   try {
+    // Body → objekt
     let body = req.body;
     if (typeof body === "string") {
       try {
@@ -31,23 +35,22 @@ export default async function handler(req, res) {
     }
 
     const { prompt } = body || {};
-
     if (!prompt || typeof prompt !== "string") {
       return res
         .status(400)
         .json({ error: "prompt saknas eller är ogiltig" });
     }
 
+    // OpenAI-bildgenerering
     const img = await client.images.generate({
       model: "gpt-image-1",
       prompt,
       n: 1,
       size: "1024x1024",
-      response_format: "url",
+      response_format: "url"
     });
 
     const imageUrl = img.data?.[0]?.url;
-
     if (!imageUrl) {
       return res
         .status(500)
