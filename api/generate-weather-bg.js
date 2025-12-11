@@ -50,13 +50,13 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: "gpt-image-1",
-        prompt,
-        n: 1,
-        size: "1024x1024",
-        response_format: "url",
-      }),
+     body: JSON.stringify({
+  model: "gpt-image-1",
+  prompt,
+  n: 1,
+  size: "1024x1024"
+}),
+
     });
 
     if (!openaiRes.ok) {
