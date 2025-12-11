@@ -1,11 +1,5 @@
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export default async function handler(req, res) {
-  // CORS för din domän
+  // CORS – samma som funkar i din testversion
   res.setHeader("Access-Control-Allow-Origin", "https://erikgolsson.se");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -15,14 +9,22 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Endast POST
+  // Endast POST tillåten
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST", "OPTIONS"]);
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   try {
-    // Body → objekt
+    // Säkerställ att vi har en API-nyckel
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({
+        error: "OPENAI_API_KEY saknas i miljövariablerna",
+      });
+    }
+
+    // Läs body (kan vara sträng eller objekt)
     let body = req.body;
     if (typeof body === "string") {
       try {
@@ -41,16 +43,33 @@ export default async function handler(req, res) {
         .json({ error: "prompt saknas eller är ogiltig" });
     }
 
-    // OpenAI-bildgenerering
-    const img = await client.images.generate({
-      model: "gpt-image-1",
-      prompt,
-      n: 1,
-      size: "1024x1024",
-      response_format: "url"
+    // Anropa OpenAI Images-API direkt via fetch
+    const openaiRes = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-image-1",
+        prompt,
+        n: 1,
+        size: "1024x1024",
+        response_format: "url",
+      }),
     });
 
-    const imageUrl = img.data?.[0]?.url;
+    if (!openaiRes.ok) {
+      const errorText = await openaiRes.text().catch(() => "");
+      return res.status(500).json({
+        error: "OpenAI-bild-API svarade inte OK",
+        details: errorText,
+      });
+    }
+
+    const data = await openaiRes.json();
+    const imageUrl = data?.data?.[0]?.url;
+
     if (!imageUrl) {
       return res
         .status(500)
@@ -59,7 +78,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ imageUrl });
   } catch (err) {
-    console.error("OpenAI image error:", err);
+    console.error("generate-weather-bg error:", err);
     return res.status(500).json({
       error: "Serverfel vid bildgenerering",
       details: err.message,
