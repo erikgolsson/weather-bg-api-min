@@ -44,18 +44,20 @@ export default async function handler(req, res) {
     }
 
     // Anropa OpenAI Images-API direkt via fetch
-    const openaiRes = await fetch("https://api.openai.com/v1/images/generations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-     body: JSON.stringify({
-  model: "gpt-image-1",
-  prompt,
-  n: 1,
-  size: "1024x1024"
-}),
+   const openaiRes = await fetch("https://api.openai.com/v1/images/generations", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${apiKey}`,
+  },
+  body: JSON.stringify({
+    model: "gpt-image-1",
+    prompt,
+    n: 1,
+    size: "1024x1024"
+  }),
+});
+
 
     });
 
